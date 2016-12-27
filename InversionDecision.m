@@ -1,6 +1,8 @@
 function [ Invert ] = InversionDecision( imgray, sizeX, sizeY, sizeZ, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR  )
-%INVERSIONDECISION Summary of this function goes here
-%   Detailed explanation goes here
+%INVERSIONDECISION 
+%   This function checks the edges of the image and compares it to the
+%   middle. It figures out which one is lighter and throws back a decisin
+%   on whether ot not to invert the image.
 %calculating average sample intensity
 SampleHeight = SampleHeightR*sizeX;
 SampleWidth = SampleWidthR*sizeY;

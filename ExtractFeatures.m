@@ -2,8 +2,54 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
     TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize)
  
+    %The big almighty function. This function takes as input the image and
+    %a few (ahem) feature extraction parameters. 
+    %It extracts the following features:
     
-
+    %ColorVarMatrix: contains variance values for the three color channels.
+    
+    %AvgColor: Average color in RGB space. 
+    
+    %ClusterCentroids: Color centroid in RGB from kmeans 
+    
+    %SymErrorBinaryX: error in the best symmetry achieved through the
+    %X-axis
+    
+    %SymErrorBinaryY: same as SymErrorBinaryX but applies to the
+    %corresponding Y axis
+    
+    %SymErrorRGBX: error in the best symmetry achieved through the
+    %X-axis, RGB
+    
+    %SymErrorRGBY: same as SymErrorBinaryX but applies to the
+    %corresponding Y axis, RGB
+    
+    %SymErrorGrayScaleX: error in the best symmetry achieved through the
+    %X-axis
+    
+    %SymErrorBinaryY: same as SymErrorBinaryX but applies to the
+    %corresponding Y axis
+    
+    %GradientChangeAvg: Average value of gradient inwards from the
+    %perimeter 
+    
+    %GradientChangeVar: Variance of gradient inwards from the perimeter
+    
+    %CoOcMatrix: Coocurance matrix for a sample of the lesion
+    
+    %CoOcMatrixProp: Properties of the CoOcurance matrix.
+    
+    %SampleEntropy: Resized and scaled entropy filtered segment of the
+    %legion
+    
+    %Roughness: Value of the edge roughness of rhe lesion
+    
+    %NoOfComponents: No of components found within the cutoff threshold.
+    
+    %The comments here use the word blob a lot to represent part of the
+    %lesion.
+    
+    %% Basic Image Processing
     [sizeX, sizeY, sizeZ] = size(im); 
 
     %clipping the dermotology watermark at the bottom of the image so that it
@@ -23,13 +69,14 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     %stretches so that the highest value is now 255
     imgray = imadjust(imgray,[double(min(min(imgray)))/255 double(max(max(imgray)))/255],[]);
 
-    %%%%%%%%%%%%%%%% Initial Segmentation %%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %% Initial Segmentation 
 
     %Otsu's algorithm for bw conversion. Thorws back a threshold for
     %segmentation
     [level EM] = graythresh(imgray);
 
-    %deciding whether or not to negate theimage. For cases where the lesion(s)
+    %deciding whether or not to negate the image. For cases where the lesion(s)
     %are lighter than the skin or vice versa.
     Invert = InversionDecision(imgray,sizeX,sizeY,sizeZ,SampleWidthR,SampleHeightR,SkinWidthR,SkinHeightR);
 
@@ -38,13 +85,14 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     if Invert == 1
         imBW = not(imBW);
     end
-
-    %Filling in holes.
+    
+    
+    %Filling in holes in case pieces in the middle were not taken during segmentation.
     FilledIn = imfill(imBW, 'holes'); 
 
-    %Trimming corners. This is needed for images with shading in the corners.
+    %Trimming corners. This is needed for images with vignetting in the corners.
     if TrimCorners == 1;
-        Trim = 1/10;
+        Trim = 1/9;
         trimmed = FilledIn;
         trimmed(1:Trim*sizeX, 1:Trim*sizeY) = 0;
         trimmed( sizeX-(Trim*sizeX): sizeX, 1:(Trim*sizeY) ) = 0;
@@ -64,7 +112,7 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     %Filling in holes.
     FilledIn = imfill(imBW, 'holes'); 
 
-    %%%%%%%%%%%%%%%% Initial Labeling %%%%%%%%%%%%%%%%%%%%5
+    %% Initial Labeling 
 
     %Labelling disconnected blobs
     LabeledMaster = bwlabel(AllBlobsMask);
@@ -92,7 +140,7 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     LargestBlobs = s(MaxList);
 
 
-    %labeling them as one blob for the color and symmetry 
+    %labeling them as one blob for color and symmetry 
     WorkBlockMask = (LabeledMaster==MaxList(1));
     LargestBlob = WorkBlockMask; %largest blob there is
     for i = 2:numel(MaxList)
@@ -101,16 +149,15 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     end
     
 
-
-    %%%%%%%%%%%%%%%%%%%%%%%%% Color Information %%%%%%%%%%%%%%%%%%%%%%%%%
-
+    %% Color Information 
+    
     [AvgColor, ColorVariance ClusterCentroids] = FindColorParam(im, WorkBlockMask, ColorClusterSize);
 
 
-    %%%%%%%%%%%%%%% Preparing top NumberToTake blobs for symmetry calc. %%%%%%%%%%%%%
+    %% Preparing top NumberToTake blobs for symmetry calc. 
     [ CroppedBinaryMask, CroppedRGB, CroppedGray ] = CenterCrop( WorkBlockMask, im, imgray );
 
-    %testing
+    %debugging code.
 %     test = regionprops(CroppedBinaryMask*2, 'Centroid', 'MajorAxisLength','MinorAxisLength','Orientation');
 
 %     hold on
@@ -153,18 +200,20 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     [SymErrorGrayX, SymErrorGrayY] = GraySymmetryError(CroppedGray, CroppedBinaryMask);
     SymErrorGray = [SymErrorGrayX SymErrorGrayY];
 
-    %%%%%%%%%%%%%%%%%%%% Getting gradient of largest blob %%%%%%%%%%%%%%%%%%%%
+    %% Getting gradient of largest blob 
 
     %cropping and centering the largesrt blob
     [ CroppedLargeBlobMask, CroppedLargeBlobRGB, CroppedLargeBlobGray ] = CenterCrop( LargestBlob, im, imgray );
+    
 
 
-    %unwrapping blob for gradient analysis
+    %unwrapping blob for gradient analysis, best if I explain this in real
+    %life
     LargeBlobProp = regionprops(CroppedLargeBlobMask, 'MinorAxisLength');
     UnWrappedLargeBlob = GetUnwrap(CroppedLargeBlobMask, CroppedLargeBlobGray, LargeBlobProp.MinorAxisLength, UnWrapDepth);
 
     [FX,FY] = gradient(double(UnWrappedLargeBlob));
-    [R C] = size(UnWrappedLargeBlob);
+    [R, C] = size(UnWrappedLargeBlob);
     GradientChangeAvg = zeros(1,C);
     GradientChangeVar = zeros(1,C);
 
@@ -179,8 +228,9 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
         GradientChangeAvg(i) = mean(abs(FY(StartVal:R,i)));
         GradientChangeVar(i) = var(FY(StartVal:R,i));
     end
-
-    %Texture Sample 
+    
+    %% Texture Sampling
+    
     SampleSizeC = TextureSampleSizeC*size(CroppedLargeBlobGray,1);
     SampleSizeR = TextureSampleSizeR*size(CroppedLargeBlobGray,2);
     UpperLeftCorner = [ (1/2)*(size(CroppedLargeBlobGray,1)-SampleSizeR), (1/2)*(size(CroppedLargeBlobGray,2)-SampleSizeC) ];
@@ -197,9 +247,9 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
 
 
 
-    %%%%%%%%%%%%% Edge roughness by approximating polygon fit %%%%%%%%%%%%%%%%%
+    %% Edge roughness by approximating polygon fit 
 
-    %using the undialated blob
+    %using the undialated blob to get true roughness
     JaggedBlobsLabeled = bwlabel(FilledIn);
     JaggedBlobProp = regionprops(JaggedBlobsLabeled, 'Area', 'MinorAxisLength', 'MajorAxisLength');
     [Sorted, Sorted] = sort([JaggedBlobProp.Area],'descend');
@@ -227,10 +277,15 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     %calculating roughness
     SimplePerimLength = sum(sum(SimplePoly));
     Roughness = JaggedLength/SimplePerimLength;
-
+    
+    %% Final clean up before output
+    
     %resizing Gradient and Entropy filter 
+    
     GradientChangeAvg = imresize(GradientChangeAvg, [1,GradientVarLength]);
     GradientChangeVar = imresize(GradientChangeVar, [1,GradientVarLength]);
+%     GradientChangeAvg = mean(GradientChangeAvg);
+%     GradientChangeVar = mean(GradientChangeVar);
     
     %resizing Entropy filtered image
     EntropSize = size(SampleEntropy);
@@ -239,28 +294,40 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     SampleEntropy = imresize(SampleEntropy, ScaleFactor);
     SampleEntropy = SampleEntropy(1:EntropyFiltSize, 1:EntropyFiltSize);
     
-    %final feature vector
+    %final feature vector, best to look at the FinalVector object down
+    %below
     FinalVectorStruct = struct('ColorVarMatrix', ColorVariance, ...
         'AvgColor', AvgColor, 'ClusterCentroids', ClusterCentroids, ...
         'SymErrorBinaryX', SymErrorBinaryX,'SymErrorBinaryY', SymErrorBinaryY, ...
+        'SymErrorRGBX', SymErrorRGBX,'SymErrorRGBY', SymErrorRGBY, ...
+        'SymErrorGrayX', SymErrorGrayX,'SymErrorGrayY', SymErrorGrayY, ...
         'GradientChangeAvg', GradientChangeAvg, 'GradientChangeVar', GradientChangeVar, ...
-        'CoOcMatrix', CoOcMatrix, 'CoOcProp', CoOcProp, 'SampleEntropy', SampleEntropy, ...
+        'CoOcMatrix', CoOcMatrix, 'CoOcProp', CoOcProp,  ...
+        'SampleEntropy', SampleEntropy, ...
         'Roughness', Roughness, 'NoOfComponents', numel(MaxList));
+    	
     
     FinalVector = [ reshape(FinalVectorStruct.ColorVarMatrix, [1 numel(FinalVectorStruct.ColorVarMatrix)] ) ...
                     reshape(FinalVectorStruct.AvgColor, [1 numel(FinalVectorStruct.AvgColor)] ) ...
                     reshape(FinalVectorStruct.ClusterCentroids, [1 numel(FinalVectorStruct.ClusterCentroids)] ) ...
                     reshape(FinalVectorStruct.SymErrorBinaryX, [1 numel(FinalVectorStruct.SymErrorBinaryX)] ) ...
                     reshape(FinalVectorStruct.SymErrorBinaryY, [1 numel(FinalVectorStruct.SymErrorBinaryY)] ) ...
+                    reshape(FinalVectorStruct.SymErrorRGBX, [1 numel(FinalVectorStruct.SymErrorRGBX)] ) ...
+                    reshape(FinalVectorStruct.SymErrorRGBY, [1 numel(FinalVectorStruct.SymErrorRGBY)] ) ...
+                    reshape(FinalVectorStruct.SymErrorGrayX, [1 numel(FinalVectorStruct.SymErrorGrayX)] ) ...
+                    reshape(FinalVectorStruct.SymErrorGrayY, [1 numel(FinalVectorStruct.SymErrorGrayY)] ) ...
+                    reshape(FinalVectorStruct.SampleEntropy, [1 numel(FinalVectorStruct.SampleEntropy)] ) ...
                     reshape(FinalVectorStruct.GradientChangeAvg, [1 numel(FinalVectorStruct.GradientChangeAvg)] ) ...
                     reshape(FinalVectorStruct.GradientChangeVar, [1 numel(FinalVectorStruct.GradientChangeVar)] ) ...
                     reshape(FinalVectorStruct.CoOcMatrix, [1 numel(FinalVectorStruct.CoOcMatrix)] ) ...
                     reshape(FinalVectorStruct.CoOcProp, [1 numel(FinalVectorStruct.CoOcProp)] ) ...
-                    reshape(FinalVectorStruct.SampleEntropy, [1 numel(FinalVectorStruct.SampleEntropy)] ) ...
                     reshape(FinalVectorStruct.Roughness, [1 numel(FinalVectorStruct.Roughness)] ) ...
                     numel(MaxList)];
                     
-    Images = struct('im', im, 'WorkBlockMask', WorkBlockMask);
+    %reshape(FinalVectorStruct.SampleEntropy, [1 numel(FinalVectorStruct.SampleEntropy)] ) ...
+    
+    %ignore this
+    Images = struct('WorkBlockMask', WorkBlockMask);
     
     %ColorVarMatrix: contains variance values for the three color channels.
     

@@ -1,5 +1,8 @@
 function [AvgColor ColorVariance ClusterCentroids] = FindColorParam(im, WorkBlockMask, ColorClusterSize)
-%FINDCOLORPARAM Summary of this function goes here
+%FINDCOLORPARAM 
+%   This function gets the average color of the blobs, the variance of the
+%   RGB values, and a few (ahem) color centroids using kmeans. Color
+%   Centroids basically represent the average colors in the image.
 %   Detailed explanation goes here
 cutout = uint8(double(im).*repmat(WorkBlockMask,[1,1,3]));
 RedSum = sum(sum(cutout(:,:,1)));
@@ -27,7 +30,7 @@ RG = cov(RVals, GVals);
 RB = cov(RVals, BVals);
 GB = cov(GVals, BVals);
 
-ColorVariance = [RG(1,1) GB(1,1) GB(2,2);
+ColorVariance = [RG(1,1) GB(1,1) RB(1,1);
                  RG(1,2) GB(1,2) RB(1,2)];
 
 

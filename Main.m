@@ -101,77 +101,100 @@ answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
 %Image input
 
 dirlist = dir('Melanoma');
-for i= 3:size(dirlist,1)
-    im = imread(['Melanoma\' dirlist(i).name]);
-    if size(im,1) > size(im, 2)
-        im = imrotate(im, 90);
+for i=3:size(dirlist,1)
+    if ~strcmp(dirlist(i).name, 'Thumbs.db') 
+        im = imread(['Melanoma\' dirlist(i).name]);
+        if size(im,1) > size(im, 2)
+            im = imrotate(im, 90);
+        end
+        [MelanomaVectors(i-2, :), Images(i-2)] = ExtractFeatures( im, DermLogo, TrimCorners, SampleWidthR, SampleHeightR, ...
+        SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
+        TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize);
     end
-    [MelanomaVectors(i-2, :), Images(i-2)] = ExtractFeatures( im, DermLogo, TrimCorners, SampleWidthR, SampleHeightR, ...
-    SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
-    TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize);
-    
 end
 
 dirlist2 = dir('NotMel');
-for i= 3:size(dirlist2,1)
-    im = imread(['NotMel\' dirlist2(i).name]);
-    if size(im,1) > size(im, 2)
-        im = imrotate(im, 90);
+for i=3:size(dirlist2,1)
+    if ~strcmp(dirlist2(i).name, 'Thumbs.db') 
+        im = imread(['NotMel\' dirlist2(i).name]);
+        if size(im,1) > size(im, 2)
+            im = imrotate(im, 90);
+        end
+        [NotMelVectors(i-2, :), Images2(i-2)] = ExtractFeatures( im, DermLogo, TrimCorners, SampleWidthR, SampleHeightR, ...
+        SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
+        TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize);
     end
-    [NotMelVectors(i-2, :), Images2(i-2)] = ExtractFeatures( im, DermLogo, TrimCorners, SampleWidthR, SampleHeightR, ...
-    SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
-    TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize);
-    
 end
 
 %printing
 
-for i = 1:size(dirlist,1)-2
-    
-    figure('name',strcat('Mel ', num2str(i)));
-    subplot(1,3,1);
-    imshow(Images(i).im);
-    
-    subplot(1,3,2);
-    imshow(Images(i).WorkBlockMask);
-    
-%     descr = {strcat('SymX Error: ', num2str(MelanomaVectors(i).SymErrorBinaryX));
-%     strcat('SymY Error: ', num2str(MelanomaVectors(i).SymErrorBinaryY));
-%     strcat('R: ', num2str(MelanomaVectors(i).Roughness));
-%     strcat('No. of components: ', num2str(MelanomaVectors(i).NoOfComponents));
-%     strcat('AvgColor: ', num2str(MelanomaVectors(i).AvgColor)); };
-%    
-%     h2 = subplot(1,3,3);
-%     imshow(ones(1,1));
-%     text(0.5,0.7,descr, 'Parent', h2)
-end
-
-for i = 1:size(dirlist2,1)-2
-    
-    figure('name',strcat('NotMel ', num2str(i)));
-    subplot(1,3,1);
-    imshow(Images2(i).im);
-    
-    subplot(1,3,2);
-    imshow(Images2(i).WorkBlockMask);
+% for i = 1:size(dirlist,1)-2
 %     
-%     descr = {strcat('SymX Error: ', num2str(NotMelVectors(i).SymErrorBinaryX));
-%     strcat('SymY Error: ', num2str(NotMelVectors(i).SymErrorBinaryY));
-%     strcat('R: ', num2str(NotMelVectors(i).Roughness));
-%     strcat('No. of components: ', num2str(NotMelVectors(i).NoOfComponents));
-%     strcat('AvgColor: ', num2str(NotMelVectors(i).AvgColor)); };
+%     figure('name',strcat('Mel ', num2str(i)));
+%     subplot(1,3,1);
+%     imshow(Images(i).im);
+%     
+%     subplot(1,3,2);
+%     imshow(Images(i).WorkBlockMask);
+%     
+% %     descr = {strcat('SymX Error: ',
+% %     num2str(MelanomaVectors(i).SymErrorBinaryX)); strcat('SymY Error: ',
+% %     num2str(MelanomaVectors(i).SymErrorBinaryY)); strcat('R: ',
+% %     num2str(MelanomaVectors(i).Roughness)); strcat('No. of components: ',
+% %     num2str(MelanomaVectors(i).NoOfComponents)); strcat('AvgColor: ',
+% %     num2str(MelanomaVectors(i).AvgColor)); };
+% %    
+% %     h2 = subplot(1,3,3); imshow(ones(1,1)); text(0.5,0.7,descr, 'Parent',
+% %     h2)
+% end
 % 
-%     h2 = subplot(1,3,3);
-%     imshow(ones(1,1));
-%     text(0.5,0.7,descr, 'Parent', h2)
-end
+% for i = 1:size(dirlist2,1)-2
+%     
+%     figure('name',strcat('NotMel ', num2str(i)));
+%     subplot(1,3,1);
+%     imshow(Images2(i).im);
+%     
+%     subplot(1,3,2);
+%     imshow(Images2(i).WorkBlockMask);
+% %     
+% %     descr = {strcat('SymX Error: ',
+% %     num2str(NotMelVectors(i).SymErrorBinaryX)); strcat('SymY Error: ',
+% %     num2str(NotMelVectors(i).SymErrorBinaryY)); strcat('R: ',
+% %     num2str(NotMelVectors(i).Roughness)); strcat('No. of components: ',
+% %     num2str(NotMelVectors(i).NoOfComponents)); strcat('AvgColor: ',
+% %     num2str(NotMelVectors(i).AvgColor)); };
+% % 
+% %     h2 = subplot(1,3,3); imshow(ones(1,1)); text(0.5,0.7,descr, 'Parent',
+% %     h2)
+% end
+
+NDIM = 100;
+
+TempCombined = [MelanomaVectors; NotMelVectors];
+[RESIDUALS,RECONSTRUCTED] = pcares(TempCombined,NDIM);
+
+MelanomaVectors = RECONSTRUCTED(1:size(MelanomaVectors,1), 1:NDIM);
+NotMelVectors = RECONSTRUCTED(size(MelanomaVectors,1)+1:end, 1:NDIM);
 
 MelanomaVectors = [MelanomaVectors ones(size(MelanomaVectors,1), 1)];
 NotMelVectors = [NotMelVectors zeros(size(NotMelVectors,1), 1)];
 
-FinalVec = [MelanomaVectors; NotMelVectors];
 
-csvwrite('Joined.data',FinalVec);
+
+MelanomaVectorsTraining = MelanomaVectors(1:floor(size(MelanomaVectors, 1)*0.9),:);
+MelanomaVectorsValidation = MelanomaVectors(ceil(size(MelanomaVectors, 1)*0.9):end,:);
+
+NotMelVectorsTraining = NotMelVectors(1:floor(size(NotMelVectors, 1)*0.9),:);
+NotMelVectorsValidation = NotMelVectors(ceil(size(NotMelVectors, 1)*0.9):end,:);
+
+FinalVecTraining = [MelanomaVectorsTraining; NotMelVectorsTraining];
+FinalVecValidation = [MelanomaVectorsValidation; NotMelVectorsValidation];
+
+FinalVecTrainingShuffled = FinalVecTraining(randperm(end),:);
+FinalVecValidationShuffled = FinalVecValidation(randperm(end),:);
+
+dlmwrite('Training.txt',FinalVecTrainingShuffled,' ');
+dlmwrite('Validation.txt',FinalVecValidationShuffled,' ');
 
 %%save('FeatureVectors.mat', 'MelanomaVectors', 'NotMelVectors');
 

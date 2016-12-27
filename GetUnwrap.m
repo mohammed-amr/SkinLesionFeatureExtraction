@@ -1,5 +1,6 @@
 function [ UnWrapped ] = GetUnwrap( BlobMask, IM, MinorAxis, DepthFactor )
-%GETUNWRAP Summary of this function goes here
+%GETUNWRAP 
+%   This is not easy to grasp from code. Best if I explain it in real life.
 %   Detailed explanation goes here
     WorkMask = BlobMask;
     [sizeR, sizeC] = size(WorkMask);

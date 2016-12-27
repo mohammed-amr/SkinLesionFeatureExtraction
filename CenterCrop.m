@@ -1,6 +1,7 @@
 function [ CroppedBinaryMask, CroppedRGB, CroppedGray ] = CenterCrop( WorkBlockMask, im, imgray )
-%CENTERCROP Summary of this function goes here
-%   Detailed explanation goes here
+%CENTERCROP 
+%   Centercrop basically centers the blobs in the image. It places its
+%   center of mass in the middle of the image.
 %classify the largest disconnected blobs separately.S
     LargeBlobData = regionprops(WorkBlockMask*2, 'Orientation');
     LargeBlobData = LargeBlobData(2);
