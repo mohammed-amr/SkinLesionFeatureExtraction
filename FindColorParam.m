@@ -4,6 +4,11 @@ function [AvgColor ColorVariance ClusterCentroids] = FindColorParam(im, WorkBloc
 %   RGB values, and a few (ahem) color centroids using kmeans. Color
 %   Centroids basically represent the average colors in the image.
 %   Detailed explanation goes here
+
+im = (imresize(im, [250, NaN]));
+WorkBlockMask = (imresize(WorkBlockMask, [250, NaN]));
+
+
 cutout = uint8(double(im).*repmat(WorkBlockMask,[1,1,3]));
 RedSum = sum(sum(cutout(:,:,1)));
 GreenSum = sum(sum(cutout(:,:,2)));

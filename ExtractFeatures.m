@@ -68,7 +68,9 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     
     %% Segmentation 
     [AllBlobsMask, RoughSegment, im] = SegmentLesion(im, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR, ShapeFactor, HairFactor, minCutOff, maxCutOff);
-
+   
+    [sizeX, sizeY, sizeZ] = size(im); 
+    
     %converting image to grayscale
     imgray = rgb2gray(im);
 
@@ -118,7 +120,7 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
 
     %% Color Information 
     
-    [AvgColor, ColorVariance ClusterCentroids] = FindColorParam(im, WorkBlockMask, ColorClusterSize);
+    [AvgColor, ColorVariance, ClusterCentroids] = FindColorParam(im, WorkBlockMask, ColorClusterSize);
 
 
     %% Preparing top NumberToTake blobs for symmetry calc. 
@@ -170,7 +172,10 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     %% Getting gradient of largest blob 
 
     %cropping and centering the largesrt blob
-    [ CroppedLargeBlobMask, CroppedLargeBlobRGB, CroppedLargeBlobGray ] = CenterCrop( LargestBlob, im, imgray );
+    imRes = (imresize(im, [1000, NaN]));
+    imgrayRes = (imresize(imgray, [1000, NaN]));
+    LargestBlobRes = (imresize(LargestBlob, [1000, NaN]));
+    [ CroppedLargeBlobMask, CroppedLargeBlobRGB, CroppedLargeBlobGray ] = CenterCrop( LargestBlobRes, imRes, imgrayRes );
     
 
 

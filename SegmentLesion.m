@@ -1,8 +1,7 @@
 function [AllBlobsMask, RoughSegment, im] = SegmentLesion(im, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR, ShapeFactor, HairFactor, minCutOff, maxCutOff)
     
     im = im(2:end-1, 2:end-1, :);
-    
-    [imBW, ClusterCenters] = ColorSegmentation(im, minCutOff, maxCutOff, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR);
+    [imBW] = ColorSegmentation(im, minCutOff, maxCutOff, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR);
     
     [sizeX, sizeY, ~] = size(im);
     

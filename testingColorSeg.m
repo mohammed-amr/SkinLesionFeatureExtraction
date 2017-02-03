@@ -1,3 +1,6 @@
+clear; 
+clc;
+
 dirlist = dir('Melanoma');
 %for i=3:size(dirlist,1)
     %if ~strcmp(dirlist(i).name, 'Thumbs.db') 
@@ -11,17 +14,22 @@ dirlist = dir('Melanoma');
         minCutOff = 0.02;
         maxCutOff = 0.81;
         
-        tic;
-        im = imread('m25.jpg');
-        [AllBlobsMask, RoughSegment] = SegmentLesion(im, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR, ShapeFactor, HairFactor, minCutOff, maxCutOff);
-        toc;
-        
-        subplot(1,3,1);
-        imshow(im);
-        subplot(1,3,2);
-        imshow(RoughSegment);
-        subplot(1,3,3);
-        imshow(AllBlobsMask);
+        for i=1:25
+
+            tic;
+            im = imread(['m' num2str(i) '.jpg']);
+
+            [AllBlobsMask, RoughSegment] = SegmentLesion(im, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR, ShapeFactor, HairFactor, minCutOff, maxCutOff);
+            toc;
+
+            figure;
+            subplot(1,3,1);
+            imshow(im);
+            subplot(1,3,2);
+            imshow(RoughSegment);
+            subplot(1,3,3);
+            imshow(AllBlobsMask);
+        end
 
         
     %end

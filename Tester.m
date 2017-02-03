@@ -31,12 +31,22 @@ GradientVarLength = 500;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 EntropyFiltSize = 50;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-im = imread('Mel.jpg');
+HairFactor = 3/100;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+minCutOff = 0.02;
+maxCutOff = 0.81;
 
-[MelanomaVector, im] = ExtractFeatures( im, DermLogo, TrimCorners, SampleWidthR, SampleHeightR, ...
-    SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
-    TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize);
+for i=25:25
+
+    tic;
+    im = imread(['m' num2str(i) '.jpg']);
+
+    [MelanomaVector, im] = ExtractFeatures( im, DermLogo, TrimCorners, SampleWidthR, SampleHeightR, ...
+        SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
+        TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize, HairFactor, minCutOff, maxCutOff);
+    toc;
+end
+    
 
 %ColorVarMatrix: contains variance values for the three color channels.
 

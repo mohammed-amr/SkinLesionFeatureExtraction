@@ -164,7 +164,7 @@ parfor i=2:size(MelList, 2)
     end
 end
 parfor_progress(0);
-save('SecondRun1.mat', '-v7.3');
+save('ThirdRun1.mat', '-v7.3');
 
 %running feature extraction for non melanoma samples
 parfor_progress(400);
@@ -204,6 +204,6 @@ parfor_progress(0);
 %%save('FeatureVectors.mat', 'MelanomaVectors', 'NotMelVectors');
 
 
-save('SecondRun2.mat', '-v7.3');
+save('ThirdRun2.mat', '-v7.3');
 
 
