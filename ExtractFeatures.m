@@ -1,6 +1,6 @@
 function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, SampleWidthR, SampleHeightR, ...
     SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
-    TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize)
+    TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize, HairFactor, minCutOff, maxCutOff)
  
     %The big almighty function. This function takes as input the image and
     %a few (ahem) feature extraction parameters. 
@@ -27,7 +27,7 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     %SymErrorGrayScaleX: error in the best symmetry achieved through the
     %X-axis
     
-    %SymErrorBinaryY: same as SymErrorBinaryX but applies to the
+    %SymErrorGrayScaleY: same as SymErrorGrayScaleY but applies to the
     %corresponding Y axis
     
     %GradientChangeAvg: Average value of gradient inwards from the
@@ -42,14 +42,20 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     %SampleEntropy: Resized and scaled entropy filtered segment of the
     %legion
     
-    %Roughness: Value of the edge roughness of rhe lesion
+    %Roughness: Value of the edge roughness of the lesion
     
     %NoOfComponents: No of components found within the cutoff threshold.
+    
+    %HairFactor hair structuring element relative width for hair removal
+    
+    %minCutOff min blob area cutoff for cluster segmentation
+    
+    %maxCutOff max blob area cutoff for cluster segmentation
     
     %The comments here use the word blob a lot to represent part of the
     %lesion.
     
-    %% Basic Image Processing
+    %% Preprocessing 
     [sizeX, sizeY, sizeZ] = size(im); 
 
     %clipping the dermotology watermark at the bottom of the image so that it
@@ -59,6 +65,9 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
         sizeX = sizeX-20;
     end
 
+    
+    %% Segmentation 
+    [AllBlobsMask, RoughSegment, im] = SegmentLesion(im, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR, ShapeFactor, HairFactor, minCutOff, maxCutOff);
 
     %converting image to grayscale
     imgray = rgb2gray(im);
@@ -68,50 +77,8 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
 
     %stretches so that the highest value is now 255
     imgray = imadjust(imgray,[double(min(min(imgray)))/255 double(max(max(imgray)))/255],[]);
-
+   
     
-    %% Initial Segmentation 
-
-    %Otsu's algorithm for bw conversion. Thorws back a threshold for
-    %segmentation
-    [level EM] = graythresh(imgray);
-
-    %deciding whether or not to negate the image. For cases where the lesion(s)
-    %are lighter than the skin or vice versa.
-    Invert = InversionDecision(imgray,sizeX,sizeY,sizeZ,SampleWidthR,SampleHeightR,SkinWidthR,SkinHeightR);
-
-    %converting image to BW using the threshold 
-    imBW = im2bw(imgray,level);
-    if Invert == 1
-        imBW = not(imBW);
-    end
-    
-    
-    %Filling in holes in case pieces in the middle were not taken during segmentation.
-    FilledIn = imfill(imBW, 'holes'); 
-
-    %Trimming corners. This is needed for images with vignetting in the corners.
-    if TrimCorners == 1;
-        Trim = 1/9;
-        trimmed = FilledIn;
-        trimmed(1:Trim*sizeX, 1:Trim*sizeY) = 0;
-        trimmed( sizeX-(Trim*sizeX): sizeX, 1:(Trim*sizeY) ) = 0;
-        trimmed( sizeX-(Trim*sizeX): sizeX, sizeY-(Trim*sizeY):sizeY ) = 0;
-        trimmed( 1 : Trim*sizeX, sizeY-(Trim*sizeY):sizeY ) = 0;
-        FilledIn = trimmed;
-    end 
-
-
-    FilledIn = bwareaopen(FilledIn, 5); %helps remove small specs before expanding 
-    
-    %applying a morphilogocial operation to help connect stary blobs.
-    %using a circle with a standerdized radius.
-    SE = strel('disk', round((ShapeFactor*sqrt(sizeX*sizeY))));
-    AllBlobsMask = imdilate(FilledIn,SE);
-    
-    %Filling in holes.
-    FilledIn = imfill(imBW, 'holes'); 
-
     %% Initial Labeling 
 
     %Labelling disconnected blobs
@@ -230,19 +197,19 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     end
     
     %% Texture Sampling
-    
-    SampleSizeC = TextureSampleSizeC*size(CroppedLargeBlobGray,1);
-    SampleSizeR = TextureSampleSizeR*size(CroppedLargeBlobGray,2);
-    UpperLeftCorner = [ (1/2)*(size(CroppedLargeBlobGray,1)-SampleSizeR), (1/2)*(size(CroppedLargeBlobGray,2)-SampleSizeC) ];
-    LowerRightCorner = [ (1/2)*(size(CroppedLargeBlobGray,1)+SampleSizeR), (1/2)*(size(CroppedLargeBlobGray,2)+SampleSizeC) ];
-
-    %getting a cooccurance matrix of the sample area
-    CoOcMatrix = graycomatrix(CroppedLargeBlobGray( UpperLeftCorner(1):LowerRightCorner(1), UpperLeftCorner(2):LowerRightCorner(2) ));
-    CoOcProp = graycoprops(CoOcMatrix);
-    CoOcProp = [CoOcProp.Contrast CoOcProp.Correlation CoOcProp.Energy CoOcProp.Homogeneity];
-
-    %entropy of the sample
-    SampleEntropy = entropyfilt(CroppedLargeBlobGray( UpperLeftCorner(1):LowerRightCorner(1), UpperLeftCorner(2):LowerRightCorner(2) ),  true(TextureEntropyNeighborhood));
+%     
+%     SampleSizeC = TextureSampleSizeC*size(CroppedLargeBlobGray,1);
+%     SampleSizeR = TextureSampleSizeR*size(CroppedLargeBlobGray,2);
+%     UpperLeftCorner = [ (1/2)*(size(CroppedLargeBlobGray,1)-SampleSizeR), (1/2)*(size(CroppedLargeBlobGray,2)-SampleSizeC) ];
+%     LowerRightCorner = [ (1/2)*(size(CroppedLargeBlobGray,1)+SampleSizeR), (1/2)*(size(CroppedLargeBlobGray,2)+SampleSizeC) ];
+% 
+%     %getting a cooccurance matrix of the sample area
+%     CoOcMatrix = graycomatrix(CroppedLargeBlobGray( UpperLeftCorner(1):LowerRightCorner(1), UpperLeftCorner(2):LowerRightCorner(2) ));
+%     CoOcProp = graycoprops(CoOcMatrix);
+%     CoOcProp = [CoOcProp.Contrast CoOcProp.Correlation CoOcProp.Energy CoOcProp.Homogeneity];
+% 
+%     %entropy of the sample
+%     SampleEntropy = entropyfilt(CroppedLargeBlobGray( UpperLeftCorner(1):LowerRightCorner(1), UpperLeftCorner(2):LowerRightCorner(2) ),  true(TextureEntropyNeighborhood));
 
 
 
@@ -250,7 +217,7 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     %% Edge roughness by approximating polygon fit 
 
     %using the undialated blob to get true roughness
-    JaggedBlobsLabeled = bwlabel(FilledIn);
+    JaggedBlobsLabeled = bwlabel(RoughSegment);
     JaggedBlobProp = regionprops(JaggedBlobsLabeled, 'Area', 'MinorAxisLength', 'MajorAxisLength');
     [Sorted, Sorted] = sort([JaggedBlobProp.Area],'descend');
     LargestJaggedBlobProp = JaggedBlobProp(Sorted(1));
@@ -280,19 +247,19 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
     
     %% Final clean up before output
     
-    %resizing Gradient and Entropy filter 
-    
-    GradientChangeAvg = imresize(GradientChangeAvg, [1,GradientVarLength]);
-    GradientChangeVar = imresize(GradientChangeVar, [1,GradientVarLength]);
-%     GradientChangeAvg = mean(GradientChangeAvg);
-%     GradientChangeVar = mean(GradientChangeVar);
-    
-    %resizing Entropy filtered image
-    EntropSize = size(SampleEntropy);
-    minEntropSize = min(EntropSize);
-    ScaleFactor = EntropyFiltSize/minEntropSize;
-    SampleEntropy = imresize(SampleEntropy, ScaleFactor);
-    SampleEntropy = SampleEntropy(1:EntropyFiltSize, 1:EntropyFiltSize);
+%     %resizing Gradient and Entropy filter 
+%     
+%     GradientChangeAvg = imresize(GradientChangeAvg, [1,GradientVarLength]);
+%     GradientChangeVar = imresize(GradientChangeVar, [1,GradientVarLength]);
+    GradientChangeAvg = mean(GradientChangeAvg);
+    GradientChangeVar = mean(GradientChangeVar);
+%     
+%     %resizing Entropy filtered image
+%     EntropSize = size(SampleEntropy);
+%     minEntropSize = min(EntropSize);
+%     ScaleFactor = EntropyFiltSize/minEntropSize;
+%     SampleEntropy = imresize(SampleEntropy, ScaleFactor);
+%     SampleEntropy = SampleEntropy(1:EntropyFiltSize, 1:EntropyFiltSize);
     
     %final feature vector, best to look at the FinalVector object down
     %below
@@ -302,9 +269,9 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
         'SymErrorRGBX', SymErrorRGBX,'SymErrorRGBY', SymErrorRGBY, ...
         'SymErrorGrayX', SymErrorGrayX,'SymErrorGrayY', SymErrorGrayY, ...
         'GradientChangeAvg', GradientChangeAvg, 'GradientChangeVar', GradientChangeVar, ...
-        'CoOcMatrix', CoOcMatrix, 'CoOcProp', CoOcProp,  ...
-        'SampleEntropy', SampleEntropy, ...
         'Roughness', Roughness, 'NoOfComponents', numel(MaxList));
+    %'CoOcMatrix', CoOcMatrix, 'CoOcProp', CoOcProp,  ...
+        %'SampleEntropy', SampleEntropy, ...
     	
     
     FinalVector = [ reshape(FinalVectorStruct.ColorVarMatrix, [1 numel(FinalVectorStruct.ColorVarMatrix)] ) ...
@@ -316,14 +283,13 @@ function [ FinalVector, Images ] = ExtractFeatures( im, DermLogo, TrimCorners, S
                     reshape(FinalVectorStruct.SymErrorRGBY, [1 numel(FinalVectorStruct.SymErrorRGBY)] ) ...
                     reshape(FinalVectorStruct.SymErrorGrayX, [1 numel(FinalVectorStruct.SymErrorGrayX)] ) ...
                     reshape(FinalVectorStruct.SymErrorGrayY, [1 numel(FinalVectorStruct.SymErrorGrayY)] ) ...
-                    reshape(FinalVectorStruct.SampleEntropy, [1 numel(FinalVectorStruct.SampleEntropy)] ) ...
                     reshape(FinalVectorStruct.GradientChangeAvg, [1 numel(FinalVectorStruct.GradientChangeAvg)] ) ...
                     reshape(FinalVectorStruct.GradientChangeVar, [1 numel(FinalVectorStruct.GradientChangeVar)] ) ...
-                    reshape(FinalVectorStruct.CoOcMatrix, [1 numel(FinalVectorStruct.CoOcMatrix)] ) ...
-                    reshape(FinalVectorStruct.CoOcProp, [1 numel(FinalVectorStruct.CoOcProp)] ) ...
                     reshape(FinalVectorStruct.Roughness, [1 numel(FinalVectorStruct.Roughness)] ) ...
                     numel(MaxList)];
-                    
+                
+    %reshape(FinalVectorStruct.CoOcProp, [1 numel(FinalVectorStruct.CoOcProp)] ) ...
+                %reshape(FinalVectorStruct.CoOcMatrix, [1 numel(FinalVectorStruct.CoOcMatrix)] ) ...
     %reshape(FinalVectorStruct.SampleEntropy, [1 numel(FinalVectorStruct.SampleEntropy)] ) ...
     
     %ignore this

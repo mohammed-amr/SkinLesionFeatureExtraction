@@ -1,6 +1,6 @@
 clear;
 clc;
-pctRunOnAll warning off;
+%pctRunOnAll warning off;
 %Main batch script. This script takes in images from the ISIC dataset and
 %processes them one by one. The output is saved as raw vectors in
 %workspace. Use WriteToFiles to save these vectors to text file. 
@@ -146,30 +146,27 @@ end
 %time.
 
 %running feature extraction for Melanoma samples
-parfor_progress(size(MelList, 2)-1);
-parfor i=2:size(MelList, 2)
-    parfor_progress;
+for i=2:size(MelList, 2)
     im = imread(MelList(i).Name);
     %MelList(i).Name
     if size(im,1) > size(im, 2)
         im = imrotate(im, 90);
     end
     try
-        [MelanomaVectors(i-1, :), Images(i-1)] = ExtractFeatures( im, DermLogo, TrimCorners, SampleWidthR, SampleHeightR, ...
-        SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
-        TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize, HairFactor, minCutOff, maxCutOff);
+        [AllBlobsMask, RoughSegment, im] = SegmentLesion(im, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR, ShapeFactor, HairFactor, minCutOff, maxCutOff);
+        subplot(1,2, 1);
+        imshow(im);
+        subplot(1,2,2);
+        imshow(uint8(AllBlobsMask*255));
     catch ME
         msgText = getReport(ME)
         continue;
     end
 end
-parfor_progress(0);
 save('SecondRun1.mat', '-v7.3');
 
 %running feature extraction for non melanoma samples
-parfor_progress(400);
-parfor i=2:401
-    parfor_progress;
+for i=2:401
     try
         im = imread(NotMelList(i).Name);
         %NotMelList(i).Name
@@ -181,15 +178,16 @@ parfor i=2:401
         im = imrotate(im, 90);
     end
     try
-        [NotMelVectors(i-1, :), Images2(i-1)] = ExtractFeatures( im, DermLogo, TrimCorners, SampleWidthR, SampleHeightR, ...
-        SkinWidthR, SkinHeightR, BlobCutOff, ShapeFactor, UnWrapDepth, RoughVal, TextureSampleSizeR, TextureSampleSizeC, ...
-        TextureEntropyNeighborhood, ColorClusterSize, NumberToTake, GradientVarLength, EntropyFiltSize, HairFactor, minCutOff, maxCutOff);
+        [AllBlobsMask, RoughSegment, im] = SegmentLesion(im, SampleWidthR, SampleHeightR, SkinWidthR, SkinHeightR, ShapeFactor, HairFactor, minCutOff, maxCutOff);
+        subplot(1,2, 1);
+        imshow(im);
+        subplot(1,2,2);
+        imshow(uint8(AllBlobsMask*255));
     catch ME
         msgText = getReport(ME)
         continue;
     end
 end
-parfor_progress(0);
 
 %% Optional PCA reconstruction. No need to worry about this now.
 % NDIM = 100;

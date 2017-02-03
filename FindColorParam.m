@@ -30,7 +30,7 @@ RG = cov(RVals, GVals);
 RB = cov(RVals, BVals);
 GB = cov(GVals, BVals);
 
-ColorVariance = [RG(1,1) GB(1,1) RB(1,1);
+ColorVariance = [RG(1,1) GB(1,1) RB(2,2);
                  RG(1,2) GB(1,2) RB(1,2)];
 
 

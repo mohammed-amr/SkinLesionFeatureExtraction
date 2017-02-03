@@ -1,7 +1,7 @@
 %Run the program. Pick the default parameters or input your own. 
 
-DermLogo = 1;
-TrimCorners = 0;
+DermLogo = 0;
+TrimCorners = 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SampleWidthR = 1/5; 
 SampleHeightR = 1/5;
