@@ -6,4 +6,4 @@
 
 
 There's a tester script, Tester.m, that runs the function on one image. 
-Use this and DON'T, I repeat DON'T, run Main or MainISIC unless you like your pc on fire.
+MainISIC extracts features in the ISIC dataset. 
