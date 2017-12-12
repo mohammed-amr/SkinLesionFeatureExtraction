@@ -1,7 +1,8 @@
 function [ UnWrapped ] = GetUnwrap( BlobMask, IM, MinorAxis, DepthFactor )
 %GETUNWRAP 
-%   This is not easy to grasp from code. Best if I explain it in real life.
-%   Detailed explanation goes here
+%   This unwraps the blob layer by layer similar to that of an onion's skin. 
+%   The resultant image is the blob spread out. Imagine take the center of the blob and 
+%   pushing it outwards to one side of the image and morphing the rest to fit a rectangle. 
     WorkMask = BlobMask;
     [sizeR, sizeC] = size(WorkMask);
     WorkMask = bwmorph(bwconvhull(WorkMask), 'erode', 0.001 * sqrt(sizeC*sizeR));
