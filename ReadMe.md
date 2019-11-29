@@ -1,6 +1,6 @@
 This repo has code for old school segmentation of skin lesions in dermoscopic images. It also houses code for extracting features of these lesions for further analysis down the line. I wrote this code while working with Dr. Tawfik Ismail at Cairo University.
 
-It has a bunch of useful functions specific to this task and can be used in other domains. The task of segmentation here is completely unsupervised if a few assumptions are allowed.
+It has a bunch of useful functions specific for this task and can be used in other domains. The task of segmentation here is completely unsupervised if a few assumptions are allowed.
 
 ### Some requirements: 
 
