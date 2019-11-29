@@ -9,10 +9,9 @@ It has a bunch of useful functions specific to this task and can be used in othe
 
 ### How do I use it?
 
-- Extract Features is the main core function that ex
+- ExtractFeatures is the main core function that extracts features for each image.
 - MainISIC is for batch processing. 
 - Main is an older batprocessing file.
-
 
 There's a tester script, Tester.m, that runs the function on one image. 
 MainISIC extracts features in the ISIC dataset.
