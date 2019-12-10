@@ -1,4 +1,4 @@
-![Alt text](teaserImage.jpeg?raw=true "Segmentation")
+![Alt text](teaserImage.png?raw=true "Segmentation")
 
 This repo has code for old school segmentation of skin lesions in dermoscopic images. It also houses code for extracting features of these lesions for further analysis down the line. I wrote this code while working with Prof. Tawfik Ismail at Cairo University.
 
